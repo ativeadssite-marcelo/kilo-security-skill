@@ -1,0 +1,152 @@
+{
+  "skill": { "name": "projeto-seguranca", "version": "1.1.0" },
+  "report": {
+    "id": "SEC-2026-09-29-001",
+    "generated_at": "2026-09-29T14:32:00Z",
+    "mode": "audit",
+    "target": {
+      "type": "api",
+      "name": "minha-api",
+      "stack": ["nodejs", "express", "postgresql", "prisma"],
+      "repo": "https://github.com/exemplo/minha-api",
+      "commit": "a1b2c3d4e5f6",
+      "branch": "main",
+      "environment": "staging"
+    },
+    "scope": {
+      "included": ["backend", "api", "auth", "database"],
+      "excluded": ["frontend", "infra"],
+      "frameworks": ["OWASP Top 10 2021", "OWASP API Top 10 2023", "ASVS 5.0 L2"]
+    }
+  },
+  "summary": {
+    "risk_level": "HIGH",
+    "total_findings": 6,
+    "by_severity": { "critical": 0, "high": 2, "medium": 3, "low": 1 },
+    "controls": {
+      "implemented": 9,
+      "partial": 3,
+      "missing": 2,
+      "vulnerable": 2,
+      "not_applicable": 1,
+      "not_verified": 1
+    },
+    "blocking_findings": ["SEC-001", "SEC-002"]
+  },
+  "controls": [
+    { "area": "HTTPS/TLS", "status": "IMPLEMENTADO" },
+    { "area": "Senhas", "status": "IMPLEMENTADO" },
+    { "area": "MFA", "status": "AUSENTE" },
+    { "area": "Rate limit", "status": "PARCIAL" },
+    { "area": "Inputs", "status": "PARCIAL" },
+    { "area": "SQL Injection", "status": "IMPLEMENTADO" },
+    { "area": "Acesso/RBAC", "status": "VULNERÁVEL" },
+    { "area": "Sessões", "status": "PARCIAL" },
+    { "area": "Secrets", "status": "VULNERÁVEL" },
+    { "area": "CORS", "status": "IMPLEMENTADO" },
+    { "area": "Logs", "status": "IMPLEMENTADO" },
+    { "area": "Backups", "status": "NÃO VERIFICADO" },
+    { "area": "Criptografia", "status": "IMPLEMENTADO" },
+    { "area": "Dependências", "status": "PARCIAL" },
+    { "area": "Patches", "status": "IMPLEMENTADO" },
+    { "area": "Monitoramento", "status": "IMPLEMENTADO" },
+    { "area": "Disaster Recovery", "status": "AUSENTE" },
+    { "area": "Supply Chain", "status": "NÃO APLICÁVEL" },
+    { "area": "Privacidade (LGPD)", "status": "PARCIAL" }
+  ],
+  "findings": [
+    {
+      "id": "SEC-001",
+      "severity": "HIGH",
+      "cvss": 8.1,
+      "category": "AUTHORIZATION",
+      "title": "IDOR em GET /api/orders/:id",
+      "owasp": "A01:2021",
+      "cwe": "CWE-639",
+      "location": { "file": "src/routes/orders.ts", "line": 42, "endpoint": "GET /api/orders/:id" },
+      "problem": "Endpoint retorna pedido sem verificar se o usuário autenticado é o dono do recurso.",
+      "impact": "Qualquer usuário autenticado pode ler pedidos de outros usuários.",
+      "remediation": "Adicionar checagem order.userId === req.user.id antes de retornar.",
+      "status": "OPEN",
+      "blocking": true
+    },
+    {
+      "id": "SEC-002",
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "category": "SECRETS",
+      "title": "JWT_SECRET hardcoded em src/config/auth.ts",
+      "owasp": "A02:2021",
+      "cwe": "CWE-798",
+      "location": { "file": "src/config/auth.ts", "line": 7 },
+      "problem": "Segredo JWT commitado no código-fonte.",
+      "impact": "Qualquer pessoa com acesso ao repositório pode forjar tokens válidos.",
+      "remediation": "Mover para env, rotacionar, limpar histórico Git, adicionar secret scanning no CI.",
+      "status": "OPEN",
+      "blocking": true
+    },
+    {
+      "id": "SEC-003",
+      "severity": "MEDIUM",
+      "cvss": 6.1,
+      "category": "AUTHENTICATION",
+      "title": "Rate limit ausente em /api/auth/reset-password",
+      "owasp": "A07:2021",
+      "cwe": "CWE-307",
+      "status": "OPEN",
+      "blocking": false
+    },
+    {
+      "id": "SEC-004",
+      "severity": "MEDIUM",
+      "cvss": 5.3,
+      "category": "SESSION",
+      "title": "Cookie de sessão sem SameSite=Strict",
+      "cwe": "CWE-1275",
+      "status": "OPEN",
+      "blocking": false
+    },
+    {
+      "id": "SEC-005",
+      "severity": "MEDIUM",
+      "cvss": 5.0,
+      "category": "DEPENDENCIES",
+      "title": "3 dependências com vulnerabilidades conhecidas",
+      "owasp": "A06:2021",
+      "cwe": "CWE-1104",
+      "status": "OPEN",
+      "blocking": false
+    },
+    {
+      "id": "SEC-006",
+      "severity": "LOW",
+      "cvss": 3.1,
+      "category": "HEADERS",
+      "title": "CSP ausente",
+      "owasp": "A05:2021",
+      "cwe": "CWE-693",
+      "status": "OPEN",
+      "blocking": false
+    }
+  ],
+  "changes": [],
+  "tests_executed": [
+    { "command": "npm test", "result": "PASS" },
+    { "command": "npm audit --production", "result": "FAIL", "details": "3 CVEs (ver SEC-005)" },
+    { "command": "gitleaks detect --no-git", "result": "FAIL", "details": "1 secret (ver SEC-002)" },
+    { "command": "npx semgrep --config=auto src/", "result": "PASS" }
+  ],
+  "pending": [
+    { "id": "PEND-001", "description": "Backup não verificado por falta de acesso ao provedor.", "blocking": false },
+    { "id": "PEND-002", "description": "Testes de IDOR só executados em staging.", "blocking": false }
+  ],
+  "next_steps": [
+    { "order": 1, "priority": "HIGH", "action": "Corrigir SEC-001 (IDOR)." },
+    { "order": 2, "priority": "HIGH", "action": "Rotacionar JWT_SECRET (SEC-002)." },
+    { "order": 3, "priority": "MEDIUM", "action": "Rate limit em /reset-password (SEC-003)." },
+    { "order": 4, "priority": "MEDIUM", "action": "Ajustar cookies (SEC-004)." },
+    { "order": 5, "priority": "MEDIUM", "action": "Atualizar dependências (SEC-005)." },
+    { "order": 6, "priority": "LOW", "action": "Adicionar CSP em report-only (SEC-006)." }
+  ],
+  "disclaimer": "Segurança é redução de risco, não garantia absoluta."
+}
