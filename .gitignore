@@ -1,0 +1,44 @@
+# Env
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Dependências
+node_modules/
+__pycache__/
+venv/
+.venv/
+vendor/
+
+# SO
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Build
+dist/
+build/
+target/
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Secrets (reforço)
+*.pem
+*.key
+*.crt
+secrets/
+
+# Artefatos gerados
+security-report.json
+gitleaks.json
+semgrep.json
