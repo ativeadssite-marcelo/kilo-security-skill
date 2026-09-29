@@ -2,10 +2,7 @@
 name: projeto-seguranca
 description: Use this skill whenever the user asks to audit, harden, implement, review, test, or document security for a web application, SaaS, API, e-commerce system, database, infrastructure, or CI/CD pipeline. It performs a defensive security workflow covering HTTPS/TLS, password hashing, MFA, rate limiting, input validation, sanitization, SQL injection, migrations, rollback, access control, session expiration, secrets, CORS, logs, backups, cryptography, dependencies, patch management, monitoring, disaster recovery, WAF, security headers, CSRF, XSS, SSRF, upload security, audit trails, incident response, pentesting, and DevSecOps.
 license: Apache-2.0
-metadata:
-  category: security
-  version: 1.0.0
-  author: Marcelo
+version: 1.1.0
 ---
 
 # Projeto de Segurança
