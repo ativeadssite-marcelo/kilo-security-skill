@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Kilo Security Report",
+  "type": "object",
+  "required": ["skill", "report", "summary", "controls", "findings"],
+  "properties": {
+    "skill": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" }
+      }
+    },
+    "report": {
+      "type": "object",
+      "required": ["id", "generated_at", "mode", "target"]
+    },
+    "summary": {
+      "type": "object",
+      "required": ["risk_level", "total_findings", "by_severity", "controls"]
+    },
+    "controls": { "type": "array" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "severity", "category", "title", "status"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^SEC-[0-9]{3,}$" },
+          "severity": { "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"] },
+          "status": { "enum": ["OPEN", "FIXED", "ACCEPTED", "FALSE_POSITIVE", "PENDING"] }
+        }
+      }
+    }
+  }
+}
