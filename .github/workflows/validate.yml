@@ -1,0 +1,78 @@
+name: Validate Skill
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Estrutura + Schema + Exemplos
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Verify required files exist
+        run: |
+          echo "🔍 Verificando arquivos obrigatórios..."
+          REQUIRED=(
+            "SKILL.md"
+            "README.md"
+            "LICENSE"
+            "CHANGELOG.md"
+            "Makefile"
+            ".gitignore"
+            "scripts/run-security.sh"
+            "schemas/security-report.schema.json"
+            "examples/security-report.json"
+            "examples/audit-example.md"
+          )
+          MISSING=0
+          for f in "${REQUIRED[@]}"; do
+            if [[ -f "$f" ]]; then
+              echo "  ✅ $f"
+            else
+              echo "  ❌ $f (AUSENTE)"
+              MISSING=$((MISSING+1))
+            fi
+          done
+          if [[ "$MISSING" -gt 0 ]]; then
+            echo "❌ $MISSING arquivo(s) obrigatório(s) ausente(s)."
+            exit 1
+          fi
+          echo "✅ Todos os arquivos presentes."
+
+      - name: Validate SKILL.md frontmatter
+        run: |
+          echo "🔍 Validando frontmatter do SKILL.md..."
+          head -1 SKILL.md | grep -q '^---$' || (echo "❌ SKILL.md não começa com ---" && exit 1)
+          grep -q '^name:'        SKILL.md || (echo "❌ campo 'name' ausente" && exit 1)
+          grep -q '^description:' SKILL.md || (echo "❌ campo 'description' ausente" && exit 1)
+          grep -q '^version:'     SKILL.md || (echo "❌ campo 'version' ausente" && exit 1)
+          grep -q '^license:'     SKILL.md || (echo "❌ campo 'license' ausente" && exit 1)
+          echo "✅ Frontmatter OK"
+
+      - name: Validate example JSON against schema
+        run: |
+          echo "🔍 Validando examples/security-report.json contra o schema..."
+          npx --yes ajv-cli validate \
+            -s schemas/security-report.schema.json \
+            -d examples/security-report.json
+          echo "✅ JSON válido"
+
+      - name: Validate Makefile targets
+        run: |
+          echo "🔍 Verificando targets do Makefile..."
+          grep -q '^audit:'     Makefile || (echo "❌ target 'audit' ausente" && exit 1)
+          grep -q '^ci:'        Makefile || (echo "❌ target 'ci' ausente" && exit 1)
+          grep -q '^validate:'  Makefile || (echo "❌ target 'validate' ausente" && exit 1)
+          echo "✅ Makefile OK"
