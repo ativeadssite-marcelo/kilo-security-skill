@@ -1,0 +1,104 @@
+name: Security Audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      fail_on:
+        description: "Nível de falha (critical|high|blocking|none)"
+        required: false
+        default: "critical"
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+jobs:
+  security:
+    name: Kilo Security Skill (audit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Verify repository structure
+        run: |
+          echo "🔍 Verificando estrutura..."
+          test -f SKILL.md              || (echo "❌ SKILL.md ausente" && exit 1)
+          test -f schemas/security-report.schema.json || (echo "❌ schema ausente" && exit 1)
+          test -f scripts/run-security.sh || (echo "❌ script ausente" && exit 1)
+          echo "✅ Estrutura OK"
+
+      - name: Validate example report against schema
+        run: |
+          echo "🔍 Validando security-report.json de exemplo contra o schema..."
+          npx --yes ajv-cli validate \
+            -s schemas/security-report.schema.json \
+            -d examples/security-report.json
+          echo "✅ Schema válido"
+
+      - name: Run security audit (dry-run)
+        run: |
+          echo "🔐 Executando auditoria em modo dry-run..."
+          chmod +x scripts/run-security.sh
+          ./scripts/run-security.sh --dry-run
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-artifacts
+          path: |
+            schemas/
+            examples/
+            scripts/
+          retention-days: 14
+
+  gate:
+    name: Security Gate (fail on critical)
+    runs-on: ubuntu-latest
+    needs: security
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Evaluate findings
+        run: |
+          REPORT="examples/security-report.json"
+          CRIT=$(jq -r '.summary.by_severity.critical // 0' "$REPORT")
+          HIGH=$(jq -r '.summary.by_severity.high // 0' "$REPORT")
+          BLOCK=$(jq -r '.summary.blocking_findings | length // 0' "$REPORT")
+
+          echo "📊 Relatório:"
+          echo "  CRÍTICAS:    $CRIT"
+          echo "  ALTAS:       $HIGH"
+          echo "  Bloqueantes: $BLOCK"
+
+          if [[ "$CRIT" -gt 0 ]]; then
+            echo "❌ Gate FALHOU: $CRIT vulnerabilidade(s) CRÍTICA(s)."
+            exit 1
+          fi
+          if [[ "$BLOCK" -gt 0 ]]; then
+            echo "⚠️  Existem $BLOCK finding(s) bloqueante(s), mas 0 CRÍTICAS. Gate passou (modo warn)."
+          fi
+          echo "✅ Gate passou."
